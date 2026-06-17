@@ -173,7 +173,7 @@ def show():
                     themes=st.session_state["themes"],
                     anomaly_stores=pd.DataFrame(),
                     total_reviews=len(filtered),
-                    avg_rating=filtered["stars"].mean(),
+                    avg_rating=filtered["stars"].mean() if filtered["stars"].notna().any() else 0,
                     date_range=f"{d_min} – {d_max}",
                     client=client,
                     brand_name=APP_NAME,
