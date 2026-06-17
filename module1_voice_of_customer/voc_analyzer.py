@@ -55,23 +55,42 @@ Respond ONLY in this JSON format, no other text:
         return {"themes":[], "error":"Parse error", "raw":raw}
 
 
-def write_exec_summary(themes, anomaly_stores, total_reviews, avg_rating,
-                       date_range, client, brand_name="the brand"):
+def write_exec_summary(
+    themes,
+    anomaly_stores,
+    total_reviews,
+    avg_rating,
+    date_range,
+    client,
+    brand_name="the brand"
+):
     themes_text = "".join([
         f"- {t['name']} ({t['percent']}%, {t['sentiment']}): {t['description']}\n"
         for t in themes[:5]
     ])
+
     anomaly_text = "No significant anomalies detected.\n"
+
     if not anomaly_stores.empty:
         for _, row in anomaly_stores.head(3).iterrows():
-            anomaly_text += f"- {row.get('label', row.get('version','?'))}: dropped {row.get('rating_drop',0):.1f} stars\n"
+            anomaly_text += (
+                f"- {row.get('label', row.get('version', '?'))}: "
+                f"dropped {row.get('rating_drop', 0):.1f} stars\n"
+            )
+
+    # Safe rating formatting
+    rating_text = (
+        f"{avg_rating:.2f}"
+        if avg_rating is not None
+        else "N/A"
+    )
 
     prompt = f"""Write a weekly executive summary for the VP of Customer Experience at {brand_name}.
 
 DATA:
 - Period: {date_range}
 - Reviews analyzed: {total_reviews:,}
-- Average rating: {avg_rating:.2f if avg_rating else 'N/A'} / 5.0
+- Average rating: {avg_rating:.2f} / 5.0
 
 TOP THEMES:
 {themes_text}
@@ -79,11 +98,23 @@ TOP THEMES:
 ANOMALIES:
 {anomaly_text}
 
-Write 3-4 short paragraphs. Plain English. No bullet points. No headers. Under 200 words."""
+Write 3-4 short paragraphs.
+Plain English.
+No bullet points.
+No headers.
+Under 200 words.
+"""
 
     r = client.chat.completions.create(
         model="llama-3.3-70b-versatile",
-        messages=[{"role":"user","content":prompt}],
-        temperature=0.4, max_tokens=400,
+        messages=[
+            {
+                "role": "user",
+                "content": prompt
+            }
+        ],
+        temperature=0.4,
+        max_tokens=400,
     )
+
     return r.choices[0].message.content.strip()
