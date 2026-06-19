@@ -7,13 +7,13 @@ How it works automatically:
 """
 
 # ── Brand Settings (only thing you change) ────────────────────────────────────
-BRAND_NAME   = "LX Pantos Americas"
+BRAND_NAME   = "Tapestry"
 APP_NAME     = BRAND_NAME
-KEYWORDS     = [    "LX Pantos logistics",
-    "LX Pantos supply chain",
-    "LX Pantos freight forwarding",
-    "LX Pantos transportation",
-    "LX Pantos warehouse operations"
+KEYWORDS     = [
+    "Coach outlet store",
+    "Coach New York store",
+    "Kate Spade outlet store",
+    "Coach handbag store",
 ]
 
 # ── App Store (leave blank if no app) ────────────────────────────────────────
@@ -21,9 +21,9 @@ APP_STORE_ID = ""
 APP_COUNTRY  = "us"
 
 # ── Platform Branding ─────────────────────────────────────────────────────────
-PLATFORM_TITLE    = "LX Pantos Intelligence Platform"
-PLATFORM_SUBTITLE = "Customer Insights & Logistics"
-PLATFORM_ICON     = "🚚"
+PLATFORM_TITLE    = "Tapestry  Intelligence Platform"
+PLATFORM_SUBTITLE = "Customer Insights & Operations"
+PLATFORM_ICON     = "👜"
 
 # ── AI Model ──────────────────────────────────────────────────────────────────
 GROQ_MODEL = "llama-3.3-70b-versatile"
