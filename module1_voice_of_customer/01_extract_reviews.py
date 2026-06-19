@@ -2,6 +2,8 @@
 Smart Data Extractor:
   1. APP_STORE_ID set → Apple App Store (iTunes RSS)
   2. APP_STORE_ID empty → Google Reviews via SerpAPI
+     - Captures full location details per review (address, city, state, lat, lon)
+     - Enables real geographic store mapping in Module 2
 """
 
 import os, sys, csv, json, time, re
@@ -20,7 +22,14 @@ HEADERS = {
                    "AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36"),
     "Accept-Language": "en-US,en;q=0.9",
 }
-FIELDNAMES = ["review_id","stars","date","title","text","source","product","version","vote_count"]
+
+FIELDNAMES = [
+    "review_id", "stars", "date", "title", "text",
+    "source", "product", "version", "vote_count",
+    # New location fields
+    "place_name", "address", "city", "state",
+    "latitude", "longitude", "google_rating", "total_reviews_at_location",
+]
 
 
 def fetch_url(url, timeout=20):
@@ -30,7 +39,6 @@ def fetch_url(url, timeout=20):
 
 
 def parse_relative_date(text):
-    """Convert 'a month ago', '2 years ago' etc to YYYY-MM-DD."""
     if not text:
         return datetime.now().strftime("%Y-%m-%d")
     text = text.lower().strip()
@@ -48,6 +56,28 @@ def parse_relative_date(text):
     except Exception:
         pass
     return now.strftime("%Y-%m-%d")
+
+
+def parse_address(raw_address):
+    """
+    Try to extract city and state from a full address string.
+    e.g. '123 Main St, Tampa, FL 33615, USA' → city='Tampa', state='FL'
+    """
+    city, state = "", ""
+    if not raw_address:
+        return city, state
+    parts = [p.strip() for p in raw_address.split(",")]
+    # Usually: Street, City, State ZIP, Country
+    if len(parts) >= 3:
+        city = parts[-3] if len(parts) >= 3 else ""
+        # Extract state from "FL 33615" or "FL"
+        state_zip = parts[-2].strip() if len(parts) >= 2 else ""
+        state_match = re.match(r'^([A-Z]{2})', state_zip)
+        if state_match:
+            state = state_match.group(1)
+    elif len(parts) == 2:
+        city = parts[0]
+    return city.strip(), state.strip()
 
 
 # ── App Store ─────────────────────────────────────────────────────────────────
@@ -75,6 +105,9 @@ def scrape_app_store():
                     "product":    BRAND_NAME,
                     "version":    e.get("im:version",{}).get("label",""),
                     "vote_count": e.get("im:voteCount",{}).get("label","0"),
+                    "place_name": "", "address": "", "city": "", "state": "",
+                    "latitude": "", "longitude": "",
+                    "google_rating": "", "total_reviews_at_location": "",
                 })
             print(f"   Page {page}: {len(entries)} reviews (total: {len(reviews)})")
             time.sleep(0.5)
@@ -92,55 +125,121 @@ def serpapi_get(params):
     return json.loads(fetch_url(url))
 
 
-def scrape_google_maps_reviews(keyword):
-    """Get Google Maps reviews for a business matching keyword."""
+def scrape_location_reviews(keyword):
+    """
+    Search Google Maps for keyword, get all matching locations,
+    then scrape reviews for each - with full location metadata per review.
+    """
     reviews = []
     try:
-        data    = serpapi_get({"engine":"google_maps","q":keyword,"type":"search"})
+        # Search for locations
+        data    = serpapi_get({"engine": "google_maps", "q": keyword, "type": "search"})
         results = data.get("local_results", [])
+
         if not results:
             print(f"   No Maps results for '{keyword}'")
             return []
-        place    = results[0]
-        data_id  = place.get("data_id","")
-        name     = place.get("title", keyword)
-        rating   = place.get("rating","")
-        n_reviews= place.get("reviews","")
-        print(f"   Found: {name} - {rating}⭐ ({n_reviews} reviews)")
-        if not data_id:
-            return []
 
-        next_token = None
-        for page in range(3):
-            params = {"engine":"google_maps_reviews","data_id":data_id,"sort_by":"newestFirst","hl":"en"}
-            if next_token:
-                params["next_page_token"] = next_token
-            rdata = serpapi_get(params)
-            raw   = rdata.get("reviews", [])
-            if not raw:
-                break
-            for r in raw:
-                text = r.get("snippet","").replace("\n"," ").strip()
-                if not text:
-                    continue
-                reviews.append({
-                    "review_id":  r.get("review_id", f"{data_id}_{len(reviews)}"),
-                    "stars":      str(r.get("rating","")),
-                    "date":       parse_relative_date(r.get("date","")),
-                    "title":      "",
-                    "text":       text,
-                    "source":     "google_maps",
-                    "product":    name,
-                    "version":    "",
-                    "vote_count": str(r.get("likes",0)),
-                })
-            print(f"   Page {page+1}: {len(raw)} reviews (total: {len(reviews)})")
-            next_token = rdata.get("serpapi_pagination",{}).get("next_page_token","")
-            if not next_token:
-                break
-            time.sleep(0.4)
+        print(f"   Found {len(results)} locations for '{keyword}'")
+
+        # Debug: print raw first result to see field structure
+        if results:
+            first = results[0]
+            print(f"   DEBUG first result keys: {list(first.keys())}")
+            print(f"   DEBUG gps_coordinates: {first.get('gps_coordinates')}")
+            print(f"   DEBUG latitude direct: {first.get('latitude')}")
+
+        for place in results[:5]:  # scrape top 5 matching locations
+            data_id       = place.get("data_id", "")
+            place_name    = place.get("title", keyword)
+            raw_address   = place.get("address", "")
+
+            # SerpAPI returns coordinates in different places depending on query type
+            gps  = place.get("gps_coordinates") or {}
+            lat  = (gps.get("latitude")
+                    or place.get("latitude")
+                    or place.get("lat")
+                    or "")
+            lon  = (gps.get("longitude")
+                    or place.get("longitude")
+                    or place.get("lng")
+                    or place.get("lon")
+                    or "")
+
+            google_rating = place.get("rating", "")
+            total_reviews = place.get("reviews", "")
+
+            print(f"   GPS raw: {gps} | lat={lat} | lon={lon}")
+
+            city, state = parse_address(raw_address)
+
+            if not data_id:
+                continue
+
+            print(f"   📍 {place_name} - {raw_address} - {google_rating}⭐ ({total_reviews} reviews)")
+
+            # Scrape reviews for this location
+            next_token = None
+            location_reviews = []
+
+            for page in range(3):  # up to 3 pages per location
+                params = {
+                    "engine":   "google_maps_reviews",
+                    "data_id":  data_id,
+                    "sort_by":  "newestFirst",
+                    "hl":       "en",
+                }
+                if next_token:
+                    params["next_page_token"] = next_token
+
+                try:
+                    rdata = serpapi_get(params)
+                    raw   = rdata.get("reviews", [])
+
+                    if not raw:
+                        break
+
+                    for r in raw:
+                        text = r.get("snippet", "").replace("\n", " ").strip()
+                        if not text:
+                            continue
+                        location_reviews.append({
+                            "review_id":  r.get("review_id", f"{data_id}_{len(location_reviews)}"),
+                            "stars":      str(r.get("rating", "")),
+                            "date":       parse_relative_date(r.get("date", "")),
+                            "title":      "",
+                            "text":       text,
+                            "source":     "google_maps",
+                            "product":    place_name,
+                            "version":    "",
+                            "vote_count": str(r.get("likes", 0)),
+                            # Full location details
+                            "place_name": place_name,
+                            "address":    raw_address,
+                            "city":       city,
+                            "state":      state,
+                            "latitude":   str(lat),
+                            "longitude":  str(lon),
+                            "google_rating":              str(google_rating),
+                            "total_reviews_at_location":  str(total_reviews),
+                        })
+
+                    print(f"      Page {page+1}: {len(raw)} reviews")
+                    next_token = rdata.get("serpapi_pagination", {}).get("next_page_token", "")
+                    if not next_token:
+                        break
+                    time.sleep(0.4)
+
+                except Exception as ex:
+                    print(f"      Page {page+1} error: {ex}")
+                    break
+
+            reviews.extend(location_reviews)
+            time.sleep(0.5)
+
     except Exception as ex:
-        print(f"   Maps error for '{keyword}': {ex}")
+        print(f"   Error for '{keyword}': {ex}")
+
     return reviews
 
 
@@ -155,16 +254,27 @@ def scrape_serpapi():
 
     for keyword in KEYWORDS[:4]:
         print(f"\n   Keyword: '{keyword}'")
-        reviews = scrape_google_maps_reviews(keyword)
+        reviews = scrape_location_reviews(keyword)
         for r in reviews:
             if r["review_id"] not in seen_ids:
                 seen_ids.add(r["review_id"])
                 all_reviews.append(r)
         time.sleep(0.5)
-        if len(all_reviews) >= 300:
+        if len(all_reviews) >= 400:
             break
 
     print(f"\n   ✅ SerpAPI: {len(all_reviews)} unique reviews")
+
+    # Print location summary
+    if all_reviews:
+        locations = {}
+        for r in all_reviews:
+            loc = r.get("place_name", "Unknown")
+            locations[loc] = locations.get(loc, 0) + 1
+        print("\n   📍 Reviews by location:")
+        for loc, count in sorted(locations.items(), key=lambda x: -x[1]):
+            print(f"      {loc}: {count} reviews")
+
     return all_reviews
 
 
@@ -187,7 +297,7 @@ def main():
         print("\n🔍 App Store ID found → App Store mode")
         reviews = scrape_app_store()
     else:
-        print("\n🔍 No App Store ID → SerpAPI mode")
+        print("\n🔍 No App Store ID → SerpAPI (Google Maps) mode")
         reviews = scrape_serpapi()
 
     if not reviews:
@@ -196,16 +306,8 @@ def main():
         sys.exit(1)
 
     save_reviews(reviews)
-
-    sources = {}
-    for r in reviews:
-        src = r.get("source","unknown")
-        sources[src] = sources.get(src,0) + 1
-
     print("\n" + "=" * 55)
     print(f"  ✅ Done - {len(reviews)} total reviews")
-    for src, count in sources.items():
-        print(f"     {src}: {count}")
     print("=" * 55)
 
 
