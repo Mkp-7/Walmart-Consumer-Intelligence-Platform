@@ -365,15 +365,13 @@ def show_version_trends(df):
 
         # Force clean date conversion — strip everything to date only
         plot_df = df[["date", "stars"]].copy()
-        plot_df["date"] = pd.to_datetime(plot_df["date"].astype(str).str[:10], format="%Y-%m-%d")
+        plot_df["date"] = pd.to_datetime(plot_df["date"].astype(str).str[:10], errors="coerce")
         plot_df = plot_df.dropna(subset=["date", "stars"])
         plot_df = plot_df.set_index("date").sort_index()
 
         rf = {"Daily": "D", "Weekly": "W", "Monthly": "ME"}[freq]
         resampled = plot_df["stars"].resample(rf).mean().dropna().reset_index()
         resampled.columns = ["Period", "Avg Rating"]
-
-        st.write(f"DEBUG: {len(resampled)} points, first={resampled['Period'].iloc[0] if len(resampled)>0 else 'none'}")
 
         if len(resampled) < 2:
             st.info("Not enough data points. Try switching to Daily.")
