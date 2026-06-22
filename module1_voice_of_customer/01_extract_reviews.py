@@ -169,7 +169,7 @@ def scrape_app_store():
     reviews = []
     for page in range(1, MAX_REVIEW_PAGES + 1):
         url = (f"https://itunes.apple.com/{APP_COUNTRY}/rss/customerreviews"
-               f"/page={page}/id={app_id}/sortby=mostrecent/json")
+               f"/page={page}/id={app_id}/sortby=mosthelpful/json")
         try:
             data    = json.loads(fetch_url(url))
             entries = data.get("feed", {}).get("entry", [])
