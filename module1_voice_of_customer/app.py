@@ -221,17 +221,22 @@ def show():
 
     # ── Raw reviews ───────────────────────────────────────────────────────────
     if st.checkbox("Show raw reviews"):
-        cols = [c for c in ["date","stars","version","title","text","place_name","city","state","source"] if c in filtered.columns]
-        display = filtered[cols].sort_values("date", ascending=False).head(200).copy()
-        
-        # Show full text in an expandable way
-        for idx, row in display.iterrows():
-            with st.expander(f"⭐ {row.get('stars','')} — {str(row.get('text',''))[:80]}..."):
-                st.write(f"**Date:** {row.get('date','')}")
-                st.write(f"**Rating:** {row.get('stars','')} ⭐")
-                if "place_name" in row and row.get("place_name"):
-                    st.write(f"**Location:** {row.get('place_name','')} — {row.get('city','')}, {row.get('state','')}")
-                if "source" in row:
-                    st.write(f"**Source:** {row.get('source','')}")
-                st.markdown("**Review:**")
-                st.write(row.get("text",""))
+            cols = [c for c in ["date","stars","version","title","text","place_name","city","state","source"] if c in filtered.columns]
+            display = filtered[cols].sort_values("date", ascending=False).head(200).copy()
+            st.dataframe(
+                display,
+                column_config={
+                    "date":       st.column_config.DateColumn("Date"),
+                    "stars":      st.column_config.NumberColumn("Rating ⭐", format="%.1f"),
+                    "text":       st.column_config.TextColumn("Review", width="large"),
+                    "title":      st.column_config.TextColumn("Title"),
+                    "version":    st.column_config.TextColumn("Version"),
+                    "place_name": st.column_config.TextColumn("Location"),
+                    "city":       st.column_config.TextColumn("City"),
+                    "state":      st.column_config.TextColumn("State"),
+                    "source":     st.column_config.TextColumn("Source"),
+                },
+                use_container_width=True,
+                hide_index=True,
+                height=500,
+            )
