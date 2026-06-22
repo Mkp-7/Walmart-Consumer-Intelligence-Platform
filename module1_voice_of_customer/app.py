@@ -221,13 +221,34 @@ def show():
 
     # ── Raw reviews ───────────────────────────────────────────────────────────
     if st.checkbox("Show raw reviews"):
-        cols = [c for c in ["date","stars","version","title","text"] if c in filtered.columns]
-        st.dataframe(
-            filtered[cols].sort_values("date", ascending=False).head(200),
-            column_config={
-                "text": st.column_config.TextColumn("Review", width="large"),
-            },
-            use_container_width=True,
-            hide_index=True,
-            height=500,
-        )
+        cols = [c for c in ["date","stars","title","text"] if c in filtered.columns]
+        display = filtered[cols].sort_values("date", ascending=False).head(200).copy()
+        
+        html = """
+        <style>
+        .review-table { width:100%; border-collapse:collapse; font-size:13px; }
+        .review-table th { background:#1e293b; color:#f1f5f9; padding:10px 12px; text-align:left; position:sticky; top:0; }
+        .review-table td { padding:10px 12px; border-bottom:1px solid #334155; vertical-align:top; color:#cbd5e1; white-space:normal; word-wrap:break-word; }
+        .review-table tr:nth-child(even) td { background:#0f172a; }
+        .review-table tr:nth-child(odd) td { background:#1e293b; }
+        .review-table td:first-child { white-space:nowrap; min-width:90px; }
+        .review-table td:nth-child(2) { white-space:nowrap; min-width:60px; }
+        .review-table td.text-col { min-width:300px; line-height:1.6; }
+        </style>
+        <div style="overflow-x:auto; max-height:600px; overflow-y:auto;">
+        <table class="review-table"><thead><tr>
+        """
+        for col in display.columns:
+            html += f"<th>{col.capitalize()}</th>"
+        html += "</tr></thead><tbody>"
+        
+        for _, row in display.iterrows():
+            html += "<tr>"
+            for col in display.columns:
+                css = 'class="text-col"' if col == "text" else ""
+                val = str(row[col]) if row[col] is not None else ""
+                html += f"<td {css}>{val}</td>"
+            html += "</tr>"
+        
+        html += "</tbody></table></div>"
+        st.markdown(html, unsafe_allow_html=True)
