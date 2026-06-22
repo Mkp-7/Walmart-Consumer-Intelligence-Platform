@@ -373,6 +373,11 @@ def show_version_trends(df):
         resampled = plot_df["stars"].resample(rf).mean().dropna().reset_index()
         resampled.columns = ["Period", "Avg Rating"]
 
+        st.write("RAW dates sample:", df["date"].head(5).tolist())
+        st.write("RAW stars sample:", df["stars"].head(5).tolist())
+        st.write("plot_df rows:", len(plot_df))
+        st.write("resampled rows:", len(resampled))
+        st.write("resampled head:", resampled.head())
         if len(resampled) < 2:
             st.info("Not enough data points. Try switching to Daily.")
         else:
