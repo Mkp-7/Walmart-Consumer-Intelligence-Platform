@@ -363,7 +363,9 @@ def show_version_trends(df):
         with col2:
             freq = st.selectbox("Interval", ["Daily", "Weekly", "Monthly"], index=0)
         rf = {"Daily": "D", "Weekly": "W", "Monthly": "ME"}[freq]
-        monthly = df.set_index("date")["stars"].resample(rf).mean().reset_index()
+        plot_df = df.copy()
+        plot_df["date"] = pd.to_datetime(plot_df["date"]).dt.normalize()
+        monthly = plot_df.set_index("date")["stars"].resample(rf).mean().reset_index()
         monthly.columns = ["Period", "Avg Rating"]
         monthly = monthly.dropna()
         if len(monthly) < 2:
