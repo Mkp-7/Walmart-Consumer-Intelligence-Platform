@@ -225,7 +225,7 @@ def show():
         display = filtered[cols].sort_values("date", ascending=False).head(200).copy()
         
         # Show full text in an expandable way
-        for idx, row in display.iterrows():
+          for idx, row in display.iterrows():
             with st.expander(f"⭐ {row.get('stars','')} — {str(row.get('text',''))[:80]}..."):
                 st.write(f"**Date:** {row.get('date','')}")
                 st.write(f"**Rating:** {row.get('stars','')} ⭐")
@@ -233,5 +233,5 @@ def show():
                     st.write(f"**Location:** {row.get('place_name','')} — {row.get('city','')}, {row.get('state','')}")
                 if "source" in row:
                     st.write(f"**Source:** {row.get('source','')}")
-                st.write(f"**Review:**")
+                st.markdown("**Review:**")
                 st.write(row.get("text",""))
