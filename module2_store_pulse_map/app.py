@@ -382,7 +382,8 @@ def show_version_trends(df):
                           annotation_text=f"Overall avg: {avg:.2f}")
             fig.update_layout(height=280, margin=dict(l=0, r=0, t=10, b=0),
                               plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
-                              yaxis=dict(range=[1, 5]))
+                              yaxis=dict(range=[1, 5], fixedrange=False))
+            st.caption(f"Showing {len(resampled)} {freq.lower()} data points from {resampled['Period'].min().date()} to {resampled['Period'].max().date()}")
             st.plotly_chart(fig, use_container_width=True, config={"scrollZoom": True})
 
     if "version" in df.columns and df["version"].notna().any() and df["version"].nunique() > 1:
