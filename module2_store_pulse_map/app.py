@@ -377,7 +377,7 @@ def show_version_trends(df):
             st.info("Not enough data points. Try switching to Daily.")
         else:
             fig = px.line(resampled, x="Period", y="Avg Rating", line_shape="spline")
-            fig.update_traces(line_color="#60a5fa", line_width=2.5)
+            fig.update_traces(line_color="#FF0000", line_width=4)
             fig.add_hline(y=avg, line_dash="dot", line_color="#94a3b8",
                           annotation_text=f"Overall avg: {avg:.2f}")
             fig.update_layout(height=280, margin=dict(l=0, r=0, t=10, b=0),
