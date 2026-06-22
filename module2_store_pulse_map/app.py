@@ -362,16 +362,23 @@ def show_version_trends(df):
         col1, col2 = st.columns([3, 1])
         with col2:
             freq = st.selectbox("Interval", ["Daily", "Weekly", "Monthly"], index=0)
+
+        # Force clean date conversion — strip everything to date only
+        plot_df = df[["date", "stars"]].copy()
+        plot_df["date"] = pd.to_datetime(plot_df["date"].astype(str).str[:10], format="%Y-%m-%d")
+        plot_df = plot_df.dropna(subset=["date", "stars"])
+        plot_df = plot_df.set_index("date").sort_index()
+
         rf = {"Daily": "D", "Weekly": "W", "Monthly": "ME"}[freq]
-        plot_df = df.copy()
-        plot_df["date"] = pd.to_datetime(plot_df["date"]).dt.normalize()
-        monthly = plot_df.set_index("date")["stars"].resample(rf).mean().reset_index()
-        monthly.columns = ["Period", "Avg Rating"]
-        monthly = monthly.dropna()
-        if len(monthly) < 2:
+        resampled = plot_df["stars"].resample(rf).mean().dropna().reset_index()
+        resampled.columns = ["Period", "Avg Rating"]
+
+        st.write(f"DEBUG: {len(resampled)} points, first={resampled['Period'].iloc[0] if len(resampled)>0 else 'none'}")
+
+        if len(resampled) < 2:
             st.info("Not enough data points. Try switching to Daily.")
-        elif not monthly.empty:
-            fig = px.line(monthly, x="Period", y="Avg Rating", line_shape="spline")
+        else:
+            fig = px.line(resampled, x="Period", y="Avg Rating", line_shape="spline")
             fig.update_traces(line_color="#60a5fa", line_width=2.5)
             fig.add_hline(y=avg, line_dash="dot", line_color="#94a3b8",
                           annotation_text=f"Overall avg: {avg:.2f}")
