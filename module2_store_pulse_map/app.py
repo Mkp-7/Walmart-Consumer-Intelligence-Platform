@@ -359,18 +359,15 @@ def show_version_trends(df):
     if "date" in df.columns and df["date"].notna().any():
         st.markdown("---")
         st.markdown("### 📈 Rating Trend Over Time")
-        date_range_days = (df["date"].max() - df["date"].min()).days if df["date"].notna().any() else 0
-        default_interval = "Daily" if date_range_days <= 30 else "Weekly" if date_range_days <= 90 else "Monthly"
         col1, col2 = st.columns([3, 1])
         with col2:
-            freq = st.selectbox("Interval", ["Daily", "Weekly", "Monthly"],
-                                index=["Daily", "Weekly", "Monthly"].index(default_interval))
+            freq = st.selectbox("Interval", ["Daily", "Weekly", "Monthly"], index=0)
         rf = {"Daily": "D", "Weekly": "W", "Monthly": "ME"}[freq]
         monthly = df.set_index("date")["stars"].resample(rf).mean().reset_index()
         monthly.columns = ["Period", "Avg Rating"]
         monthly = monthly.dropna()
         if len(monthly) < 2:
-            st.info(f"Not enough data points for a {freq.lower()} chart. Try switching to Daily.")
+            st.info("Not enough data points. Try switching to Daily.")
         elif not monthly.empty:
             fig = px.line(monthly, x="Period", y="Avg Rating", line_shape="spline")
             fig.update_traces(line_color="#60a5fa", line_width=2.5)
