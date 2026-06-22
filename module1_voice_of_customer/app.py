@@ -110,16 +110,33 @@ def show():
                                plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)", coloraxis_showscale=False)
             st.plotly_chart(fig2, use_container_width=True)
 
-    if "date" in filtered.columns and not filtered["date"].isna().all():
+    if "date" in filtered.columns and filtered["date"].notna().any():
         st.markdown("### Rating Trend Over Time")
-        monthly = filtered.set_index("date")["stars"].resample("ME").mean().reset_index()
-        monthly.columns = ["Month","Avg Rating"]
-        fig3 = px.line(monthly, x="Month", y="Avg Rating", line_shape="spline")
-        fig3.update_traces(line_color="#60a5fa", line_width=2.5)
-        fig3.update_layout(height=230, margin=dict(l=0,r=0,t=10,b=0),
-                           plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
-                           yaxis=dict(range=[1,5]))
-        st.plotly_chart(fig3, use_container_width=True)
+        plot_df = filtered[["date","stars"]].copy()
+        plot_df["date"] = pd.to_datetime(plot_df["date"].astype(str).str[:10], errors="coerce")
+        plot_df = plot_df.dropna(subset=["date","stars"]).set_index("date").sort_index()
+        date_range_days = (plot_df.index.max() - plot_df.index.min()).days if len(plot_df) > 0 else 0
+        rf = "D" if date_range_days <= 30 else "W" if date_range_days <= 90 else "ME"
+        monthly = plot_df["stars"].resample(rf).mean().dropna().reset_index()
+        monthly.columns = ["Month", "Avg Stars"]
+        if len(monthly) < 2:
+            dist = filtered["stars"].dropna().value_counts().sort_index().reset_index()
+            dist.columns = ["Stars","Count"]
+            fig = px.bar(dist, x="Stars", y="Count",
+                         color="Stars",
+                         color_continuous_scale=["#E24B4A","#EF9F27","#FAC775","#97C459","#1D9E75"],
+                         title="Rating Distribution")
+            fig.update_layout(height=250, margin=dict(l=0,r=0,t=40,b=0),
+                              plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
+                              coloraxis_showscale=False, showlegend=False)
+            st.plotly_chart(fig, use_container_width=True)
+        else:
+            fig3 = px.line(monthly, x="Month", y="Avg Rating", line_shape="spline")
+            fig3.update_traces(line_color="#60a5fa", line_width=2.5)
+            fig3.update_layout(height=230, margin=dict(l=0,r=0,t=10,b=0),
+                               plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
+                               yaxis=dict(range=[1,5]))
+            st.plotly_chart(fig3, use_container_width=True)
 
     # ── AI Theme Analysis ─────────────────────────────────────────────────────
     st.markdown("---")
