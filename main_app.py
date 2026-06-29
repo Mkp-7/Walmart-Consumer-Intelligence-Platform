@@ -208,8 +208,8 @@ def load_home_kpis():
             rev["date"] = pd.to_datetime(rev["date"], errors="coerce")
             valid_dates = rev["date"].dropna()
             if len(valid_dates) > 0:
-                kpis["date_min"] = valid_dates.min().strftime("%b %Y")
-                kpis["date_max"] = valid_dates.max().strftime("%b %Y")
+                kpis["date_min"] = valid_dates.min().strftime("%b %d, %Y")
+                kpis["date_max"] = valid_dates.max().strftime("%b %d, %Y")
             else:
                 kpis["date_min"] = kpis["date_max"] = "N/A"
         else:
