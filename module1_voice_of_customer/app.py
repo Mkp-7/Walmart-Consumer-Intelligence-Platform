@@ -131,7 +131,7 @@ def show():
                               coloraxis_showscale=False, showlegend=False)
             st.plotly_chart(fig, use_container_width=True)
         else:
-            fig3 = px.line(monthly, x="Month", y="Avg Rating", line_shape="spline")
+            fig3 = px.line(monthly, x="Month", y="Avg Stars", line_shape="spline")
             fig3.update_traces(line_color="#60a5fa", line_width=2.5)
             fig3.update_layout(height=230, margin=dict(l=0,r=0,t=10,b=0),
                                plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
