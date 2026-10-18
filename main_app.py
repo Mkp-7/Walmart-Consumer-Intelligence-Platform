@@ -165,8 +165,8 @@ with st.sidebar:
 
     groq_key = os.environ.get("GROQ_API_KEY", "")
     if not groq_key:
-        st.markdown("---")
-        st.warning("⚠️ Add GROQ_API_KEY to a `.env` file.\nFree key: console.groq.com")
+        st.sidebar.markdown("---")
+        st.sidebar.caption("🟢 No API key required — all analysis runs locally.")
 
 
 def nav_to(page_key: str):
