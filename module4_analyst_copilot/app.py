@@ -89,14 +89,14 @@ def show():
 
     st.markdown("### 💡 Try asking:")
     questions = [
-        "What are customers complaining about most?",
-        "Which app version caused the most issues?",
-        "What do happy customers love?",
-        "What is the overall sentiment trend?",
-        "What features do users request most?",
-        "Why are 1-star reviews being left?",
-        "What percentage of reviews mention shipping?",
-        "Summarize the top 3 problems to fix.",
+        "What do customers complain about most?",
+        "How are checkout wait times rated?",
+        "What do customers say about cleanliness?",
+        "Are there complaints about out of stock items?",
+        "Which states have the lowest ratings?",
+        "What do customers say about staff?",
+        "How is the self-checkout experience rated?",
+        "What do customers praise most?",
     ]
     cols = st.columns(4)
     for i, q in enumerate(questions):
