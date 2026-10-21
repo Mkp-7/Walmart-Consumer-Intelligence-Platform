@@ -3,6 +3,7 @@ TARGET_BUSINESS_NAMES = [
 ]
 
 PLATFORM_TITLE    = "Walmart Customer Intelligence Platform"
+BRAND_NAME = "Walmart"
 PLATFORM_SUBTITLE = "Store Operations & Customer Insights"
 PLATFORM_ICON     = "🛒"
 
