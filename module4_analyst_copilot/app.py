@@ -8,7 +8,7 @@ load_dotenv()
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, BASE_DIR)
-from config import REVIEWS_CSV, BRAND_NAME as APP_NAME, GROQ_MODEL
+from config import REVIEWS_CSV, BRAND_NAME as APP_NAME
 from module1_voice_of_customer.voc_analyzer import get_groq_client
 
 
