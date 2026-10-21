@@ -154,10 +154,10 @@ def show_location_map(df):
 
         if sub.empty:
             # Add an empty invisible trace so the legend entry still appears
-            fig.add_trace(go.Scattermapbox(
+            fig.add_trace(go.Scattermap(
                 lat=[None], lon=[None],
                 mode="markers",
-                marker=go.scattermapbox.Marker(size=10, color=color),
+                marker=go.scattermap.Marker(size=10, color=color),
                 name=f"{status_val} (0)",
                 showlegend=True,
             ))
@@ -173,7 +173,7 @@ def show_location_map(df):
         trace_kwargs = dict(
             lat=lat_j, lon=lon_j,
             mode="markers",
-            marker=go.scattermapbox.Marker(
+            marker=go.scattermap.Marker(
                 size=marker_sizes,
                 color=color,
                 opacity=0.9,
@@ -208,15 +208,15 @@ def show_location_map(df):
         if "Cluster" in view:
             trace_kwargs["cluster"] = dict(enabled=True, color=color, size=20, step=3)
 
-        fig.add_trace(go.Scattermapbox(**trace_kwargs))
+        fig.add_trace(go.Scattermap(**trace_kwargs))
 
     center_lat = filtered["latitude"].mean()
     center_lon = filtered["longitude"].mean()
 
     fig.update_layout(
-        mapbox_style="carto-positron",
-        mapbox_zoom=3.5,
-        mapbox_center={"lat": center_lat, "lon": center_lon},
+        map_style="carto-positron",
+        map_zoom=3.5,
+        map_center={"lat": center_lat, "lon": center_lon},
         height=560,
         margin=dict(l=0, r=0, t=0, b=0),
         showlegend=True,
@@ -375,7 +375,7 @@ def show_version_trends(df):
         st.markdown("### 📈 Rating Trend Over Time")
         col1, col2 = st.columns([3, 1])
         with col2:
-            freq = st.selectbox("Interval", ["Daily", "Weekly", "Monthly"], index=0)
+            freq = st.select("Interval", ["Daily", "Weekly", "Monthly"], index=0)
 
         # Force clean date conversion — strip everything to date only
         plot_df = df[["date", "stars"]].copy()
